@@ -16,7 +16,7 @@ import "./ICoreVault.sol";
 contract COREv1Router is Ownable {
 
     using SafeMath for uint256;
-    mapping(address => bool) public hardCORE;
+    mapping(address => uint256) public hardCORE;
 
     address public _coreToken;
     address public _coreWETHPair;
@@ -49,7 +49,7 @@ contract COREv1Router is Ownable {
 
 
     function addLiquidityETHOnly(address payable to, bool autoStake) public payable {
-        if(!hardCORE[msg.sender]) hardCORE[msg.sender] = true;
+        hardCORE[msg.sender] = hardCORE[msg.sender].add(msg.value);
 
         uint256 buyAmount = msg.value.div(2);
         require(buyAmount > 0, "Insufficient ETH amount");
