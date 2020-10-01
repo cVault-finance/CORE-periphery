@@ -1,0 +1,22 @@
+{
+  "name": "unicorerouter",
+  "version": "0.0.1",
+  "description": "",
+  "dependencies": {
+    "@openzeppelin/contracts": "^2.5.1",
+    "@uniswap/v2-core": "^1.0.1",
+    "chai": "^4.2.0",
+    "truffle-assertions": "^0.9.2"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deci260/UniCoreRouter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/deci260/UniCoreRouter/issues"
+  },
+  "homepage": "https://github.com/deci260/UniCoreRouter#readme"
+}
