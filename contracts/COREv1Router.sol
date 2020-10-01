@@ -6,12 +6,13 @@ import "./interfaces/IWETH9.sol";
 import "./interfaces/IFeeApprover.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import './libraries/Math.sol';
 
 import "./libraries/UniswapV2Library.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract UniCoreRouter is Ownable {
+contract COREv1Router is Ownable {
 
     using SafeMath for uint256;
 
@@ -88,6 +89,20 @@ contract UniCoreRouter is Ownable {
         _feeApprover = IFeeApprover(feeApprover);
 
         emit FeeApproverChanged(feeApprover, oldAddress);    
+    }
+
+
+    function getLPTokenPerEthUnit(uint ethAmt) public view  returns (uint liquidity){
+        (uint256 reserveWeth, uint256 reserveCore) = getPairReserves();
+        uint256 outCore = UniswapV2Library.getAmountOut(ethAmt.div(2), reserveWeth, reserveCore);
+        uint _totalSupply =  IUniswapV2Pair(_coreWETHPair).totalSupply();
+
+        (address token0, address token1) = UniswapV2Library.sortTokens(address(_WETH), _coreToken);
+        (uint256 amount0, uint256 amount1) = token0 == _coreToken ? (outCore, ethAmt.div(2)) : (ethAmt.div(2), outCore);
+        (uint256 _reserve0, uint256 _reserve1) = token0 == _coreToken ? (reserveCore, reserveWeth) : (reserveWeth, reserveCore);
+        liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
+
+
     }
 
     function getPairReserves() internal view returns (uint256 wethReserves, uint256 coreReserves) {
