@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity ^0.6.0;
+
 
 interface IFeeApprover {
 
-    function sync() external;
+    function check(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
 
     function setFeeMultiplier(uint _feeMultiplier) external;
     function feePercentX100() external view returns (uint);
