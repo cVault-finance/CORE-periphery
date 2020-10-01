@@ -34,10 +34,9 @@ contract COREv1Router is Ownable {
     event FeeApproverChanged(address indexed newAddress, address indexed oldAddress);
 
     fallback() external payable {
-        addLiquidityETHOnly(msg.sender);
-    }
-    receive() external payable{
-
+        if(msg.sender != address(_WETH)){
+             addLiquidityETHOnly(msg.sender);
+        }
     }
 
 
