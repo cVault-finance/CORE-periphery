@@ -1,5 +1,6 @@
 pragma solidity 0.6.12;
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@nomiclabs/buidler/console.sol";
 
 import "./interfaces/IWETH9.sol";
 import "./interfaces/IFeeApprover.sol";
@@ -32,10 +33,15 @@ contract COREv1Router is Ownable {
 
     event FeeApproverChanged(address indexed newAddress, address indexed oldAddress);
 
-    receive() external payable {
+    fallback() external payable {
+        addLiquidityETHOnly(msg.sender);
+    }
+    receive() external payable{
+
     }
 
-    function addLiquidityETHOnly(address payable to) external payable {
+
+    function addLiquidityETHOnly(address payable to) public payable {
         uint256 buyAmount = msg.value.div(2);
         require(buyAmount > 0, "Insufficient ETH amount");
         _WETH.deposit{value : msg.value}();

@@ -13,6 +13,8 @@ contract("UniCoreRouter", accounts => {
 
     let testAccount = accounts[0];
     let setterAccount = accounts[1];
+    let testAccount2 = accounts[2];
+
     beforeEach(async () => {
         this.uniV2Factory = await UniV2Factory.new(setterAccount);
         this.weth = await WETH.new();
@@ -49,6 +51,10 @@ contract("UniCoreRouter", accounts => {
         truffleAssert.passes(
             await this.coreRouter.addLiquidityETHOnly(testAccount, { from: testAccount, value: (99).toString() })
         );
+
+        await this.coreRouter.send(99, { from: testAccount2, value: 99 });
+
+        assert.isTrue((await this.corePair.balanceOf(testAccount2)).gt(0));
 
         assert.isTrue((await this.corePair.balanceOf(testAccount)).gt(0));
     });
