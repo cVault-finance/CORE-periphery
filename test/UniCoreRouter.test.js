@@ -2,6 +2,8 @@ const UniCoreRouter = artifacts.require("COREv1Router");
 const UniV2Factory = artifacts.require("UniswapV2Factory");
 const WETH = artifacts.require("WETH9");
 const CORE = artifacts.require("CORE");
+const COREVAULT = artifacts.require("CoreVault");
+
 const FeeApproverMock = artifacts.require("FeeApproverMock");
 const UniV2Pair = artifacts.require("UniswapV2Pair");
 const FeeApprover = artifacts.require('FeeApprover');
@@ -23,6 +25,7 @@ contract("UniCoreRouter", accounts => {
         this.feeapprover = await FeeApprover.new({ from: setterAccount });
         this.corePair = await UniV2Pair.at((await this.uniV2Factory.createPair(this.weth.address, this.coreToken.address)).receipt.logs[0].args.pair);
         await this.feeapprover.initialize(this.coreToken.address, this.weth.address, this.corePair.address, { from: setterAccount });
+        this.corevault = await COREVAULT.new({ from: setterAccount });
 
         await this.feeapprover.setPaused(false, { from: setterAccount });
         await this.coreToken.setShouldTransferChecker(this.feeapprover.address, { from: setterAccount });
@@ -32,24 +35,24 @@ contract("UniCoreRouter", accounts => {
         await this.coreToken.transfer(this.corePair.address, 10e18.toString(), { from: setterAccount });
         await this.corePair.mint(setterAccount);
 
-        this.coreRouter = await UniCoreRouter.new(this.coreToken.address, this.weth.address, this.uniV2Factory.address, this.corePair.address, this.feeapprover.address);
+        this.coreRouter = await UniCoreRouter.new(this.coreToken.address, this.weth.address, this.uniV2Factory.address, this.corePair.address, this.feeapprover.address, this.corevault.address);
     });
 
     it("should load the context", () => { });
 
     it("should be able to add liquidity with only eth", async () => {
         truffleAssert.passes(
-            await this.coreRouter.addLiquidityETHOnly(testAccount, { from: testAccount, value: 10e18.toString() })
+            await this.coreRouter.addLiquidityETHOnly(testAccount, false, { from: testAccount, value: 10e18.toString() })
         );
 
         console.log("----Start smaller deposit");
         truffleAssert.passes(
-            await this.coreRouter.addLiquidityETHOnly(testAccount, { from: testAccount, value: (40000000000000000).toString() })
+            await this.coreRouter.addLiquidityETHOnly(testAccount, false, { from: testAccount, value: (40000000000000000).toString() })
         );
 
 
         truffleAssert.passes(
-            await this.coreRouter.addLiquidityETHOnly(testAccount, { from: testAccount, value: (99).toString() })
+            await this.coreRouter.addLiquidityETHOnly(testAccount, false, { from: testAccount, value: (99).toString() })
         );
 
         await this.coreRouter.send(99, { from: testAccount2, value: 99 });

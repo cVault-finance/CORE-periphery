@@ -10,6 +10,7 @@ import './libraries/Math.sol';
 
 import "./libraries/UniswapV2Library.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./ICoreVault.sol";
 
 
 contract COREv1Router is Ownable {
@@ -19,28 +20,34 @@ contract COREv1Router is Ownable {
     address public _coreToken;
     address public _coreWETHPair;
     IFeeApprover public _feeApprover;
-
+    ICoreVault public _coreVault;
     IWETH public _WETH;
     address public _uniV2Factory;
 
-    constructor(address coreToken, address WETH, address uniV2Factory, address coreWethPair, address feeApprover) public {
+    constructor(address coreToken, address WETH, address uniV2Factory, address coreWethPair, address feeApprover, address coreVault) public {
         _coreToken = coreToken;
         _WETH = IWETH(WETH);
         _uniV2Factory = uniV2Factory;
         _feeApprover = IFeeApprover(feeApprover);
         _coreWETHPair = coreWethPair;
+        _coreVault = ICoreVault(coreVault);
+        refreshApproval();
+    }
+
+    function refreshApproval() public {
+        IUniswapV2Pair(_coreWETHPair).approve(address(_coreVault), uint(-1));
     }
 
     event FeeApproverChanged(address indexed newAddress, address indexed oldAddress);
 
     fallback() external payable {
         if(msg.sender != address(_WETH)){
-             addLiquidityETHOnly(msg.sender);
+             addLiquidityETHOnly(msg.sender, false);
         }
     }
 
 
-    function addLiquidityETHOnly(address payable to) public payable {
+    function addLiquidityETHOnly(address payable to, bool autoStake) public payable {
         uint256 buyAmount = msg.value.div(2);
         require(buyAmount > 0, "Insufficient ETH amount");
         _WETH.deposit{value : msg.value}();
@@ -53,12 +60,12 @@ contract COREv1Router is Ownable {
         (address token0, address token1) = UniswapV2Library.sortTokens(address(_WETH), _coreToken);
         IUniswapV2Pair(_coreWETHPair).swap(_coreToken == token0 ? outCore : 0, _coreToken == token1 ? outCore : 0, address(this), "");
 
-        _addLiquidity(outCore, buyAmount, to);
+        _addLiquidity(outCore, buyAmount, to, autoStake);
 
         _feeApprover.sync();
     }
 
-    function _addLiquidity(uint256 coreAmount, uint256 wethAmount, address payable to) internal {
+    function _addLiquidity(uint256 coreAmount, uint256 wethAmount, address payable to, bool autoStake) internal {
         (uint256 wethReserve, uint256 coreReserve) = getPairReserves();
 
         uint256 optimalCoreAmount = UniswapV2Library.quote(wethAmount, wethReserve, coreReserve);
@@ -74,7 +81,13 @@ contract COREv1Router is Ownable {
         assert(_WETH.transfer(_coreWETHPair, optimalWETHAmount));
         assert(IERC20(_coreToken).transfer(_coreWETHPair, optimalCoreAmount));
 
-        IUniswapV2Pair(_coreWETHPair).mint(to);
+        if (autoStake) {
+            IUniswapV2Pair(_coreWETHPair).mint(address(this));
+            _coreVault.depositFor(to, 0, IUniswapV2Pair(_coreWETHPair).balanceOf(address(this)));
+        }
+        else
+            IUniswapV2Pair(_coreWETHPair).mint(to);
+        
 
         //refund dust
         if (coreAmount > optimalCoreAmount)
