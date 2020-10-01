@@ -1,10 +1,10 @@
-pragma solidity >=0.5.16;
-
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+pragma solidity 0.6.12;
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@nomiclabs/buidler/console.sol";
 
 import "./interfaces/IWETH9.sol";
 import "./interfaces/IFeeApprover.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
+// import "./uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import './libraries/Math.sol';
 
@@ -33,15 +33,17 @@ contract COREv1Router is Ownable {
 
     event FeeApproverChanged(address indexed newAddress, address indexed oldAddress);
 
-    function() external payable {
-        return addLiquidityETHOnly(msg.sender);
+    fallback() external payable {
+        if(msg.sender != address(_WETH)){
+             addLiquidityETHOnly(msg.sender);
+        }
     }
+
 
     function addLiquidityETHOnly(address payable to) public payable {
         uint256 buyAmount = msg.value.div(2);
         require(buyAmount > 0, "Insufficient ETH amount");
-
-        _WETH.deposit.value(msg.value)();
+        _WETH.deposit{value : msg.value}();
 
         (uint256 reserveWeth, uint256 reserveCore) = getPairReserves();
         uint256 outCore = UniswapV2Library.getAmountOut(buyAmount, reserveWeth, reserveCore);
@@ -98,7 +100,7 @@ contract COREv1Router is Ownable {
         uint256 outCore = UniswapV2Library.getAmountOut(ethAmt.div(2), reserveWeth, reserveCore);
         uint _totalSupply =  IUniswapV2Pair(_coreWETHPair).totalSupply();
 
-        (address token0, address token1) = UniswapV2Library.sortTokens(address(_WETH), _coreToken);
+        (address token0, ) = UniswapV2Library.sortTokens(address(_WETH), _coreToken);
         (uint256 amount0, uint256 amount1) = token0 == _coreToken ? (outCore, ethAmt.div(2)) : (ethAmt.div(2), outCore);
         (uint256 _reserve0, uint256 _reserve1) = token0 == _coreToken ? (reserveCore, reserveWeth) : (reserveWeth, reserveCore);
         liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
