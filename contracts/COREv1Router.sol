@@ -34,6 +34,7 @@ contract COREv1Router is Ownable {
     event FeeApproverChanged(address indexed newAddress, address indexed oldAddress);
 
     function() external payable {
+        return addLiquidityETHOnly(msg.sender);
     }
 
     function addLiquidityETHOnly(address payable to) public payable {
