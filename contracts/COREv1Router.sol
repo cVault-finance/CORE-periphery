@@ -49,10 +49,12 @@ contract COREv1Router is Ownable {
 
 
     function addLiquidityETHOnly(address payable to, bool autoStake) public payable {
+        require(to != address(0), "Invalid address");
         hardCORE[msg.sender] = hardCORE[msg.sender].add(msg.value);
 
         uint256 buyAmount = msg.value.div(2);
         require(buyAmount > 0, "Insufficient ETH amount");
+
         _WETH.deposit{value : msg.value}();
 
         (uint256 reserveWeth, uint256 reserveCore) = getPairReserves();
